@@ -1,0 +1,1 @@
+# shopify-no-image-finder
