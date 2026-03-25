@@ -2,130 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Products Without Images</title>
+<title>No Image Finder</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f6f7; min-height: 100vh; padding: 40px 20px; }
-.container { max-width: 960px; margin: 0 auto; }
-h1 { font-size: 24px; font-weight: 600; color: #202223; margin-bottom: 8px; }
-.subtitle { color: #6d7175; font-size: 14px; margin-bottom: 32px; }
-.card { background: white; border-radius: 8px; border: 1px solid #e1e3e5; padding: 24px; margin-bottom: 24px; }
-.btn { background: #008060; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: 500; cursor: pointer; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f6f7; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; }
+.container { max-width: 500px; width: 100%; text-align: center; }
+.icon { font-size: 48px; margin-bottom: 16px; }
+h1 { font-size: 22px; font-weight: 600; color: #202223; margin-bottom: 8px; }
+p { color: #6d7175; font-size: 14px; margin-bottom: 32px; line-height: 1.6; }
+.btn { background: #008060; color: white; border: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; }
 .btn:hover { background: #006e52; }
-.btn:disabled { background: #95c9b4; cursor: not-allowed; }
-.progress-wrap { margin-top: 20px; display: none; }
-.progress-bar-bg { background: #e1e3e5; border-radius: 4px; height: 8px; overflow: hidden; }
-.progress-bar { background: #008060; height: 8px; width: 0%; transition: width 0.3s; border-radius: 4px; }
-.progress-text { font-size: 13px; color: #6d7175; margin-top: 8px; }
-.badge { background: #ffc96b; color: #202223; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; }
-thead th { text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #6d7175; border-bottom: 1px solid #e1e3e5; background: #f6f6f7; }
-tbody tr:hover { background: #f9fafb; }
-tbody td { padding: 12px 16px; font-size: 14px; color: #202223; border-bottom: 1px solid #f1f2f3; }
-.edit-link { color: #008060; text-decoration: none; font-weight: 500; }
-.edit-link:hover { text-decoration: underline; }
-.error { background: #fff4f4; border: 1px solid #ffd2d2; border-radius: 6px; padding: 16px; color: #d72c0d; font-size: 14px; margin-top: 16px; display: none; }
-#results-section { display: none; }
-.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.note { margin-top: 20px; font-size: 12px; color: #8c9196; }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Products Without Images</h1>
-<p class="subtitle">Scans your entire Parts Target catalog and lists every product that has no image.</p>
-<div class="card">
-<button class="btn" id="scanBtn" onclick="startScan()">Find Products With No Images</button>
-<div class="progress-wrap" id="progressWrap">
-<div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
-<div class="progress-text" id="progressText">Starting scan...</div>
+  <div class="icon">🔍</div>
+  <h1>Products Without Images</h1>
+  <p>Click the button below to open the No Image Finder tool. It will scan your entire Parts Target catalog and show all products missing images with direct edit links.</p>
+  <a class="btn" href="https://773grp.github.io/shopify-no-image-finder/tool.html" target="_blank">Open No Image Finder</a>
+  <p class="note">Opens in a new tab. Results link directly back to each product in your Shopify admin.</p>
 </div>
-<div class="error" id="errorBox"></div>
-</div>
-<div id="results-section">
-<div class="card">
-<div class="results-header">
-<div style="font-size:16px;font-weight:600;color:#202223">Results <span class="badge" id="countBadge">0</span></div>
-<div style="font-size:14px;color:#6d7175" id="resultsCount"></div>
-</div>
-<table>
-<thead><tr><th>#</th><th>Product Title</th><th>Action</th></tr></thead>
-<tbody id="resultsBody"></tbody>
-</table>
-</div>
-</div>
-</div>
-<script>
-var TOKEN = "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";
-var SHOP = "djesdd-pb.myshopify.com";
-var STORE_HANDLE = "djesdd-pb";
-
-async function startScan() {
-  var btn = document.getElementById("scanBtn");
-  var progressWrap = document.getElementById("progressWrap");
-  var progressBar = document.getElementById("progressBar");
-  var progressText = document.getElementById("progressText");
-  var errorBox = document.getElementById("errorBox");
-  var resultsSection = document.getElementById("results-section");
-  var resultsBody = document.getElementById("resultsBody");
-  var countBadge = document.getElementById("countBadge");
-  var resultsCount = document.getElementById("resultsCount");
-  btn.disabled = true;
-  progressWrap.style.display = "block";
-  errorBox.style.display = "none";
-  resultsSection.style.display = "none";
-  resultsBody.innerHTML = "";
-  progressBar.style.width = "5%";
-  progressText.textContent = "Connecting to Shopify...";
-  var allNoImage = [];
-  var cursor = null;
-  var page = 1;
-  var totalFetched = 0;
-  try {
-    while (true) {
-      var cursorPart = cursor ? ', after: "' + cursor + '"' : "";
-      var query = "{ products(first: 250" + cursorPart + ") { pageInfo { hasNextPage endCursor } edges { node { id title media(first: 1) { edges { node { __typename } } } } } } }";
-      var resp = await fetch("https://" + SHOP + "/admin/api/2024-01/graphql.json", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": TOKEN },
-        body: JSON.stringify({ query: query })
-      });
-      if (!resp.ok) throw new Error("API error: " + resp.status);
-      var data = await resp.json();
-      if (data.errors) throw new Error(data.errors[0].message);
-      var edges = data.data.products.edges;
-      var pageInfo = data.data.products.pageInfo;
-      totalFetched += edges.length;
-      for (var i = 0; i < edges.length; i++) { if (edges[i].node.media.edges.length === 0) allNoImage.push(edges[i].node); }
-      progressText.textContent = "Scanned " + totalFetched + " products... found " + allNoImage.length + " without images";
-      progressBar.style.width = Math.min(90, 5 + page * 8) + "%";
-      if (!pageInfo.hasNextPage) break;
-      cursor = pageInfo.endCursor;
-      page++;
-    }
-    progressBar.style.width = "100%";
-    progressText.textContent = "Scan complete!";
-    countBadge.textContent = allNoImage.length;
-    resultsCount.textContent = "Scanned " + totalFetched + " total products";
-    if (allNoImage.length === 0) {
-      resultsBody.innerHTML = "<tr><td colspan='3' style='padding:24px;text-align:center;color:#6d7175'>No products without images found!</td></tr>";
-    } else {
-      for (var j = 0; j < allNoImage.length; j++) {
-        var p = allNoImage[j];
-        var id = p.id.replace("gid://shopify/Product/", "");
-        var url = "https://admin.shopify.com/store/" + STORE_HANDLE + "/products/" + id;
-        var tr = document.createElement("tr");
-        tr.innerHTML = "<td style='color:#6d7175;width:50px'>" + (j+1) + "</td><td>" + p.title + "</td><td><a class='edit-link' href='" + url + "' target='_blank'>Edit</a></td>";
-        resultsBody.appendChild(tr);
-      }
-    }
-    resultsSection.style.display = "block";
-  } catch(err) {
-    errorBox.textContent = "Error: " + err.message + ". This tool must be opened directly at https://773grp.github.io/shopify-no-image-finder/ in your browser, not inside Shopify admin.";
-    errorBox.style.display = "block";
-    progressWrap.style.display = "none";
-  }
-  btn.disabled = false;
-}
-</script>
 </body>
 </html>
